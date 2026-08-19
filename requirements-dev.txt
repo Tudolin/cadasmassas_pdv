@@ -1,0 +1,4 @@
+﻿# Ferramentas de desenvolvimento e CI. Nao vao para o notebook da loja.
+-r requirements.txt
+pytest==8.3.4
+ruff==0.8.6

@@ -1,0 +1,14 @@
+# Dependencias do PDV ANTIGO (`app.py`, interface Tkinter/ttkbootstrap).
+#
+# Este arquivo preserva o que estava em requirements.txt antes do PDV web
+# entrar no repositorio. O `app.py` continua funcionando e serve de plano B
+# enquanto o caixa novo nao estiver validado na loja.
+#
+#   python -m venv .venv-legado
+#   .venv-legado\Scripts\pip install -r requirements-legado.txt
+#   .venv-legado\Scripts\python app.py
+
+pandas
+Pillow
+pywin32
+ttkbootstrap

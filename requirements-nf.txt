@@ -1,0 +1,7 @@
+﻿# Emissor de nota fiscal via Selenium (adaptador "iob").
+#
+# LEIA pdv/nota_fiscal.py ANTES DE INSTALAR: o emissor da IOB exige captcha
+# resolvido por pessoa, e Chrome + chromedriver custam algumas centenas de MB
+# de RAM -- o oposto do requisito de baixo consumo. So instale se voce sabe
+# exatamente por que precisa.
+selenium==4.27.1

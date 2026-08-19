@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caixa - {{ loja.nome }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='caixa.css') }}">
+</head>
+<body>
+
+<header class="barra">
+  <div class="loja">{{ loja.nome }}</div>
+  <div class="indicadores">
+    <span id="ind-catalogo" class="indicador" title="Versao do catalogo em memoria">catalogo --</span>
+    <span id="ind-fila" class="indicador" title="Vendas ainda nao enviadas ao Upstash">fila --</span>
+    <span id="ind-impressora" class="indicador" title="Impressora do cupom">impressora --</span>
+    <span id="relogio" class="indicador"></span>
+  </div>
+</header>
+
+<main>
+  <!-- Coluna da esquerda: leitura + carrinho -->
+  <section class="painel-esquerdo">
+    <form id="form-leitura" autocomplete="off">
+      <label for="codigo">Codigo de barras</label>
+      <!-- Este campo e o centro do PDV: o leitor USB "digita" aqui e da
+           Enter. O JS devolve o foco para ca depois de qualquer acao. -->
+      <input id="codigo" name="codigo" type="text" inputmode="numeric"
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             placeholder="Passe o produto no leitor..." autofocus>
+    </form>
+
+    <div id="aviso" class="aviso oculto"></div>
+
+    <div class="tabela-area">
+      <table id="tabela-carrinho">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th>Produto</th>
+            <th class="num">Qtd / Peso</th>
+            <th class="num">Unitario</th>
+            <th class="num">Subtotal</th>
+            <th class="col-acao"></th>
+          </tr>
+        </thead>
+        <tbody id="corpo-carrinho">
+          <tr class="vazio"><td colspan="6">Carrinho vazio - passe o primeiro produto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rodape-carrinho">
+      <button type="button" id="btn-limpar" class="secundario">Limpar carrinho (Ctrl+Del)</button>
+      <button type="button" id="btn-buscar" class="secundario">Buscar por nome (F2)</button>
+      <button type="button" id="btn-peso" class="secundario">Peso manual (F4)</button>
+    </div>
+  </section>
+
+  <!-- Coluna da direita: total e pagamento -->
+  <aside class="painel-direito">
+    <div class="total-caixa">
+      <span class="total-rotulo">TOTAL</span>
+      <output id="total" class="total-valor">R$ 0,00</output>
+      <span id="contagem" class="total-itens">0 item(ns)</span>
+    </div>
+
+    <fieldset class="pagamento">
+      <legend>Forma de pagamento</legend>
+      <div class="formas">
+        <label><input type="radio" name="forma" value="dinheiro" checked> Dinheiro <kbd>F5</kbd></label>
+        <label><input type="radio" name="forma" value="debito"> Debito <kbd>F6</kbd></label>
+        <label><input type="radio" name="forma" value="credito"> Credito <kbd>F7</kbd></label>
+        <label><input type="radio" name="forma" value="pix"> Pix <kbd>F8</kbd></label>
+      </div>
+
+      <div id="area-dinheiro">
+        <label for="recebido">Valor recebido</label>
+        <input id="recebido" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+        <div class="troco-linha">
+          <span>Troco</span>
+          <output id="troco">R$ 0,00</output>
+        </div>
+      </div>
+
+      <details class="extras">
+        <summary>CPF na nota / nota fiscal</summary>
+        <label for="cpf">CPF/CNPJ do cliente</label>
+        <input id="cpf" type="text" inputmode="numeric" placeholder="somente numeros" autocomplete="off">
+        <label class="checkbox"><input type="checkbox" id="emitir-nf"> Emitir nota fiscal</label>
+      </details>
+    </fieldset>
+
+    <button type="button" id="btn-finalizar" class="principal">Finalizar venda (F9)</button>
+
+    <div id="mensagem" class="mensagem"></div>
+
+    <details class="extras diagnostico">
+      <summary>Operacao</summary>
+      <button type="button" id="btn-sinc-catalogo" class="secundario">Atualizar catalogo</button>
+      <button type="button" id="btn-sinc-vendas" class="secundario">Enviar vendas pendentes</button>
+      <button type="button" id="btn-fechamento" class="secundario">Fechamento do dia</button>
+      <div class="reimprimir">
+        <input id="cupom-reimprimir" type="text" inputmode="numeric" placeholder="n do cupom">
+        <button type="button" id="btn-reimprimir" class="secundario">Reimprimir</button>
+      </div>
+      <pre id="saida-diagnostico" class="saida"></pre>
+    </details>
+  </aside>
+</main>
+
+<!-- Overlay de busca por nome -->
+<div id="overlay-busca" class="overlay oculto">
+  <div class="caixa-modal">
+    <h2>Buscar produto por nome</h2>
+    <input id="busca-termo" type="text" placeholder="ex.: canelone" autocomplete="off">
+    <ul id="busca-resultados" class="resultados"></ul>
+    <p class="dica">Setas para navegar, Enter para escolher, Esc para fechar.</p>
+  </div>
+</div>
+
+<!-- Overlay de peso manual -->
+<div id="overlay-peso" class="overlay oculto">
+  <div class="caixa-modal">
+    <h2 id="peso-titulo">Informar peso</h2>
+    <p id="peso-produto" class="dica"></p>
+    <label for="peso-valor">Peso em gramas</label>
+    <input id="peso-valor" type="text" inputmode="numeric" placeholder="ex.: 480">
+    <div class="acoes-modal">
+      <button type="button" id="btn-peso-confirmar" class="principal">Adicionar</button>
+      <button type="button" id="btn-peso-cancelar" class="secundario">Cancelar (Esc)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay do cupom recem-fechado -->
+<div id="overlay-cupom" class="overlay oculto">
+  <div class="caixa-modal largo">
+    <h2 id="cupom-titulo">Venda finalizada</h2>
+    <div id="cupom-troco" class="troco-destaque"></div>
+    <pre id="cupom-texto" class="cupom"></pre>
+    <div class="acoes-modal">
+      <button type="button" id="btn-cupom-fechar" class="principal">Nova venda (Enter)</button>
+    </div>
+  </div>
+</div>
+
+<footer class="atalhos">
+  <kbd>Enter</kbd> ler codigo
+  <kbd>F2</kbd> buscar
+  <kbd>F4</kbd> peso manual
+  <kbd>F5</kbd>–<kbd>F8</kbd> pagamento
+  <kbd>F9</kbd> finalizar
+  <kbd>Ctrl+Del</kbd> limpar
+  <kbd>Esc</kbd> voltar ao campo
+</footer>
+
+<script src="{{ url_for('static', filename='caixa.js') }}"></script>
+</body>
+</html>

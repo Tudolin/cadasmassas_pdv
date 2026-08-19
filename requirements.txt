@@ -1,0 +1,21 @@
+# Dependencias do PDV. Lista curta de proposito: cada pacote aqui e tempo
+# de boot e memoria no notebook do cliente.
+#
+# Nao estao aqui, e por que:
+#   requests / httpx  -> urllib da stdlib resolve a API REST do Upstash
+#   python-dotenv     -> pdv/config.py le o .env em 15 linhas
+#   SQLAlchemy        -> sqlite3 da stdlib basta para 2 tabelas
+#   pandas            -> nada aqui faz analise tabular
+
+Flask==3.1.0
+waitress==3.0.2
+
+# Impressao termica ESC/POS via spooler do Windows.
+# Marcado por plataforma: no CI (Linux) o pip ignora esta linha, e o
+# `pdv/impressao.py` importa win32print de forma tardia.
+pywin32==308; sys_platform == "win32"
+
+# --- opcionais -----------------------------------------------------------
+# Janela nativa em vez de aba do navegador:  pip install pywebview
+# Emissor de NF via Selenium (leia pdv/nota_fiscal.py primeiro):
+#                                            pip install -r requirements-nf.txt

@@ -1,0 +1,25 @@
+﻿# --- PDV web (novo) ---
+.venv/
+.venv-legado/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Configuracao com credenciais: NUNCA versionar.
+.env
+
+# Dados de operacao: banco local, fila de vendas, cupons, notas, logs.
+# Sao dados da loja, nao codigo.
+dados/
+boot.log
+boot.err
+boot2.log
+boot2.err
+
+# --- PDV antigo (Tkinter) ---
+build/
+*.spec.bak
+
+# O dist/app.exe esta versionado de proposito (o dono instala por ali),
+# entao dist/ NAO entra aqui.

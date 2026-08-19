@@ -1,0 +1,73 @@
+# Configuracao das ferramentas de desenvolvimento.
+#
+# Nao declara o projeto como pacote instalavel de proposito: o PDV roda a
+# partir da pasta do repositorio (`python run.py`), atualizada por git pull.
+# Um `pip install -e .` no meio do caminho so daria mais um passo para dar
+# errado no logon da loja.
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+# Import mode importlib: os testes acham o pacote `pdv` sem precisar de
+# instalacao nem de mexer em PYTHONPATH.
+addopts = "-ra --strict-markers --import-mode=importlib"
+filterwarnings = [
+    "error",                     # warning novo em teste = falha, nao ruido
+    "ignore::DeprecationWarning:waitress.*",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = [
+    ".venv",
+    # O PDV antigo (Tkinter, 3 mil linhas) segue no repositorio como plano B,
+    # mas nao passa pelo lint do codigo novo -- corrigi-lo nao e o trabalho
+    # de agora, e um lint vermelho que ninguem vai limpar so ensina a
+    # ignorar o lint.
+    "app.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle
+    "F",      # pyflakes
+    "I",      # isort: ordem dos imports
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # bugbear: as pegadinhas classicas
+    "C4",     # comprehensions
+    "SIM",    # simplificacoes
+    "RUF",    # regras do proprio ruff
+    "PTH",    # usar pathlib em vez de os.path
+    "T20",    # print() esquecido no codigo do app
+]
+ignore = [
+    "E501",   # comprimento de linha: o formatter ja cuida
+    "B008",   # chamada em valor padrao: usado de proposito nos dataclass
+    # O codigo e escrito em portugues, de ponta a ponta -- foi decisao do
+    # projeto, para o dono conseguir ler. Entao as excecoes se chamam
+    # `ErroCarrinho` e nao `CarrinhoError`; exigir sufixo em ingles aqui
+    # deixaria a nomenclatura pela metade.
+    "N818",
+    # Constante local em MAIUSCULA dentro de funcao (ex.: `LOTE = 100`).
+    # E de proposito: sinaliza "isto e um numero fixo", e o escopo e a
+    # funcao mesmo -- subir para o modulo so afastaria do uso.
+    "N806",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# A tabela de transliteracao existe PARA tratar esses caracteres ambiguos
+# (travessao, aspa curva, espaco nao separavel) que a impressora termica nao
+# imprime. Avisar sobre eles ali e avisar sobre a solucao.
+"pdv/impressao.py" = ["RUF001"]
+# Os scripts de linha de comando CONVERSAM pelo print; e a interface deles.
+"scripts/*.py" = ["T20", "E402"]
+# Testes leem o estado interno de proposito e nao precisam de docstring.
+"tests/*.py" = ["SLF001"]
+# run.py e a entrada do processo: print e log de boot sao a interface.
+"run.py" = ["T20"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

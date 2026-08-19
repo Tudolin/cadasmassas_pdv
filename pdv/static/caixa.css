@@ -1,0 +1,438 @@
+/*
+ * Tela de caixa. Requisitos que guiaram o CSS:
+ *
+ * - E um caixa, nao um dashboard: numero grande, contraste alto, zero
+ *   animacao. O operador olha o total de longe e com pressa.
+ * - Sem framework e sem fonte externa -- a tela abre offline e nao paga
+ *   download nenhum no boot.
+ * - Altura fixa em 100vh com o carrinho rolando por dentro: o total e o
+ *   botao de finalizar nunca somem da tela.
+ */
+
+:root {
+  --fundo: #12151c;
+  --fundo-painel: #1b202b;
+  --fundo-campo: #0d1015;
+  --borda: #2c3444;
+  --texto: #eef2f8;
+  --texto-fraco: #97a3b6;
+  --destaque: #ffb02e;   /* massa / ovo: a cor da marca */
+  --ok: #35c37d;
+  --erro: #ff5c5c;
+  --aviso: #ffcf5c;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 16px/1.4 "Segoe UI", system-ui, sans-serif;
+  overflow: hidden; /* quem rola e o carrinho, nao a pagina */
+}
+
+/* ---------------------------------------------------------------- barra */
+
+.barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--fundo-painel);
+  border-bottom: 1px solid var(--borda);
+}
+
+.loja { font-weight: 700; letter-spacing: 0.02em; }
+
+.indicadores { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.indicador {
+  font-size: 0.78rem;
+  color: var(--texto-fraco);
+  background: var(--fundo-campo);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+}
+
+.indicador.alerta { color: var(--aviso); border-color: var(--aviso); }
+.indicador.ruim { color: var(--erro); border-color: var(--erro); }
+
+/* --------------------------------------------------------------- layout */
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 22rem;
+  gap: 1px;
+  min-height: 0; /* deixa o filho rolar em vez de esticar o grid */
+  background: var(--borda);
+}
+
+.painel-esquerdo,
+.painel-direito {
+  background: var(--fundo);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* -------------------------------------------------------------- leitura */
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-fraco);
+  margin-bottom: 0.25rem;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--fundo-campo);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+  padding: 0.5rem 0.7rem;
+}
+
+input[type="text"]:focus {
+  outline: 2px solid var(--destaque);
+  outline-offset: 1px;
+}
+
+#codigo {
+  font-size: 1.6rem;
+  font-family: "Consolas", ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  padding: 0.6rem 0.8rem;
+}
+
+.aviso {
+  background: #3a2f10;
+  border: 1px solid var(--aviso);
+  color: var(--aviso);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+/* ------------------------------------------------------------- carrinho */
+
+.tabela-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--fundo-painel);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-fraco);
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--borda);
+}
+
+tbody td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #232a37;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+/* A linha recem-adicionada fica marcada: confirmacao visual de que o bipe
+   entrou, sem precisar ler o texto. */
+tbody tr.novo { background: #1f2a1f; }
+
+.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.col-num { width: 3rem; }
+.col-acao { width: 2.5rem; }
+
+td.produto { font-weight: 600; }
+td.codigo { font-size: 0.75rem; color: var(--texto-fraco); }
+
+tr.vazio td {
+  text-align: center;
+  color: var(--texto-fraco);
+  padding: 2rem 1rem;
+}
+
+.remover {
+  background: none;
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  color: var(--erro);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: 0.2rem 0.45rem;
+}
+
+.remover:hover { border-color: var(--erro); }
+
+.rodape-carrinho { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* --------------------------------------------------------------- total */
+
+.total-caixa {
+  background: var(--fundo-painel);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: right;
+}
+
+.total-rotulo {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--texto-fraco);
+}
+
+.total-valor {
+  display: block;
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--destaque);
+  font-variant-numeric: tabular-nums;
+}
+
+.total-itens { font-size: 0.8rem; color: var(--texto-fraco); }
+
+/* ----------------------------------------------------------- pagamento */
+
+fieldset {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0;
+}
+
+legend {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-fraco);
+  padding: 0 0.35rem;
+}
+
+.formas { display: grid; gap: 0.35rem; margin-bottom: 0.75rem; }
+
+.formas label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+  color: var(--texto);
+  margin: 0;
+  cursor: pointer;
+}
+
+.troco-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--texto-fraco);
+}
+
+#troco {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ok);
+  font-variant-numeric: tabular-nums;
+}
+
+#area-dinheiro.oculto { display: none; }
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--texto);
+  margin-top: 0.5rem;
+}
+
+/* ------------------------------------------------------------- botoes */
+
+button {
+  font: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.5rem 0.8rem;
+}
+
+.principal {
+  background: var(--destaque);
+  border: none;
+  color: #201703;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.8rem;
+  width: 100%;
+}
+
+.principal:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.secundario {
+  background: var(--fundo-campo);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  font-size: 0.85rem;
+}
+
+.secundario:hover { border-color: var(--destaque); }
+
+/* ----------------------------------------------------------- mensagens */
+
+.mensagem {
+  min-height: 2.6rem;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.mensagem.ok { background: #12291d; border-color: var(--ok); color: var(--ok); }
+.mensagem.erro { background: #2b1416; border-color: var(--erro); color: var(--erro); }
+
+/* ---------------------------------------------------------- overlays */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 12, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 10;
+}
+
+.overlay.oculto, .oculto { display: none; }
+
+.caixa-modal {
+  background: var(--fundo-painel);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 1.25rem;
+  width: min(32rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.caixa-modal.largo { width: min(46rem, 100%); }
+
+.caixa-modal h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+
+.dica { color: var(--texto-fraco); font-size: 0.8rem; }
+
+.resultados {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.resultados li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.resultados li.ativo { background: #2b3446; outline: 1px solid var(--destaque); }
+.resultados .preco { color: var(--destaque); font-variant-numeric: tabular-nums; }
+
+.acoes-modal { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.acoes-modal .principal { width: auto; flex: 1; }
+
+.troco-destaque {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ok);
+  margin-bottom: 0.75rem;
+}
+
+.cupom, .saida {
+  background: #07090d;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font: 12px/1.35 "Consolas", ui-monospace, monospace;
+  white-space: pre;
+  overflow-x: auto;
+  color: #cfd6e2;
+}
+
+.saida { max-height: 14rem; overflow-y: auto; font-size: 11px; }
+
+.extras summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--texto-fraco);
+  padding: 0.25rem 0;
+}
+
+.diagnostico { display: grid; gap: 0.4rem; }
+.reimprimir { display: flex; gap: 0.4rem; }
+.reimprimir input { flex: 1; }
+
+/* -------------------------------------------------------------- rodape */
+
+.atalhos {
+  background: var(--fundo-painel);
+  border-top: 1px solid var(--borda);
+  padding: 0.35rem 1rem;
+  font-size: 0.75rem;
+  color: var(--texto-fraco);
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+kbd {
+  background: var(--fundo-campo);
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+  font: 0.72rem "Consolas", ui-monospace, monospace;
+  color: var(--texto);
+}
+
+/* Notebook pequeno: empilha as colunas em vez de comprimir o total. */
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+  body { overflow: auto; }
+}
