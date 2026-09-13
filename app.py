@@ -804,6 +804,8 @@ class PDVSystem:
                 "Atenção", "Digite um código de barras ou nome do produto!")
             return
 
+        self.code_entry.delete(0, tk.END)
+
         # Verificar se é um código de barras ou nome
         if entrada.isdigit():
             produto = self.decodificar_codigo_barras(entrada)
@@ -814,16 +816,21 @@ class PDVSystem:
                 self.info_text.see(tk.END)
             else:
                 messagebox.showerror("Erro", "Produto não encontrado!")
+            self.code_entry.focus()
         else:
             produtos = self.buscar_produtos_por_nome(entrada)
             if produtos:
+                # A janela "Selecione um Produto" e modal e cuida do
+                # proprio foco (Enter/Esc/duplo-clique -> selecionar ou
+                # cancelar). Focar de volta no code_entry AQUI tira o
+                # teclado da janela assim que ela abre: Esc e Enter passam
+                # a cair no `self.root.bind('<Escape>', ...)` e no
+                # `code_entry` em vez de fechar a janela de selecao.
                 self.exibir_lista_produtos(produtos)
             else:
                 messagebox.showerror(
                     "Erro", "Nenhum produto encontrado com esse nome!")
-
-        self.code_entry.delete(0, tk.END)
-        self.code_entry.focus()
+                self.code_entry.focus()
 
     def buscar_produtos_por_nome(self, nome):
         """Busca produtos pelo nome no banco de dados"""
@@ -953,16 +960,19 @@ class PDVSystem:
         # Adicionar evento Escape para cancelar
         dialog.bind('<Escape>', lambda e: cancelar())
 
-        # Selecionar o primeiro item da lista
+        # Selecionar o primeiro item da lista e manter o foco na arvore:
+        # e o que faz as setas Cima/Baixo trocarem a linha destacada. Um
+        # `dialog.focus_set()` aqui (como havia antes) tira o foco da
+        # arvore para o Toplevel e quebra a navegacao por seta -- Enter e
+        # Esc continuam funcionando do mesmo jeito, porque o Treeview nao
+        # tem binding proprio para essas teclas e elas sobem ate os binds
+        # do `dialog` de qualquer forma.
         if tree.get_children():
             tree.selection_set(tree.get_children()[0])
             tree.focus_set()
             tree.focus(tree.get_children()[0])
         else:
             tree.focus_set()
-
-        # Focar na janela
-        dialog.focus_set()
 
     def adicionar_produto_ao_carrinho(self, produto):
         """Adiciona o produto ao carrinho"""
