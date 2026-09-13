@@ -87,10 +87,24 @@ def diagnosticar(host: str) -> str:
 
     if any(pedaco in nome.lower() for pedaco in _EMISSORES_CONHECIDOS):
         linhas.append(
-            "Este emissor parece legitimo. Se ainda houver erro de certificado, "
-            "o problema pode estar no relogio do Windows (hora errada derruba "
-            "validacao de certificado) ou em outra causa -- veja a secao de "
-            "problemas comuns no README."
+            "Este emissor e legitimo -- entao NAO e antivirus/proxy trocando "
+            "certificado. A causa mais comum quando o emissor e legitimo mas o "
+            "Python ainda assim recusa (\"unable to get local issuer "
+            "certificate\") e o Windows com a lista de certificados-raiz "
+            "desatualizada (comum em maquina que fica muito tempo sem rodar o "
+            "Windows Update): falta a raiz do emissor (ex.: 'ISRG Root X1' do "
+            "Let's Encrypt) no repositorio de certificados confiaveis do "
+            "sistema. Corrija baixando a lista atual da propria Microsoft (nao "
+            "depende do Windows Update completo estar liberado), como "
+            "Administrador:\n\n"
+            "    certutil -generateSSTFromWU roots.sst\n\n"
+            "e importando o arquivo `roots.sst` gerado: abra o Gerenciador de "
+            "Certificados (`certmgr.msc`) -> Autoridades de Certificacao Raiz "
+            "Confiaveis -> Certificados -> botao direito -> Todas as Tarefas -> "
+            "Importar -> selecione `roots.sst` (pode aceitar todos). Reinicie "
+            "e rode `testar_redis.py` de novo.\n"
+            "Menos provavel, mas confira tambem: relogio/data do Windows "
+            "errado tambem derruba validacao de certificado."
         )
     else:
         linhas.append(
