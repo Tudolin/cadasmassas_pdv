@@ -585,12 +585,27 @@ window.addEventListener("focus", focarCodigo);
 
 // ------------------------------------------------------------- diagnostico
 
-$("btn-sinc-catalogo").addEventListener("click", async () => {
+/**
+ * Usada tanto pelo botao do topo (acesso rapido, ao lado do indicador)
+ * quanto pelo de dentro de "Operacao" -- os dois fazem a mesma coisa.
+ */
+async function sincronizarCatalogo() {
+  const desabilitados = [$("btn-sinc-catalogo"), $("btn-sinc-catalogo-topo")].filter(Boolean);
+  for (const b of desabilitados) b.disabled = true;
+
   mostrarMensagem("Atualizando catalogo...", null);
-  const dados = await pedir("/api/catalogo/sincronizar", {});
-  mostrarMensagem(dados.mensagem, dados.ok ? "ok" : "erro");
-  atualizarEstado();
-});
+  try {
+    const dados = await pedir("/api/catalogo/sincronizar", {});
+    mostrarMensagem(dados.mensagem, dados.ok ? "ok" : "erro");
+    await atualizarEstado();
+  } finally {
+    for (const b of desabilitados) b.disabled = false;
+    focarCodigo();
+  }
+}
+
+$("btn-sinc-catalogo").addEventListener("click", () => sincronizarCatalogo());
+$("btn-sinc-catalogo-topo").addEventListener("click", () => sincronizarCatalogo());
 
 $("btn-sinc-vendas").addEventListener("click", async () => {
   const dados = await pedir("/api/vendas/sincronizar", {});
