@@ -47,7 +47,6 @@ Set-Location $Raiz
 $PastaDados = Join-Path $Raiz 'dados'
 $Log        = Join-Path $PastaDados 'inicializacao.log'
 $Python     = Join-Path $Raiz '.venv\Scripts\python.exe'
-$Pip        = Join-Path $Raiz '.venv\Scripts\pip.exe'
 $HashReq    = Join-Path $PastaDados 'requirements.hash'
 $Porta      = 8777
 
@@ -223,24 +222,32 @@ if ($SemAtualizar) {
             } else {
                 Escrever "versao nova no GitHub: $curto -> $curtoR"
 
-                # Se houver alteracao local nao comitada, o pull falha no meio.
-                # Melhor avisar e seguir com o que esta no disco.
-                $sujo = & $git status --porcelain
-                if ($sujo) {
-                    Escrever 'ha alteracoes locais nao comitadas; pull cancelado' 'AVISO'
-                    Escrever ($sujo -join '; ') 'AVISO'
+                # NAO checar "git status --porcelain" antes de tentar: o
+                # pdv_database.db e versionado (secao 4 do README) mas e
+                # tambem o banco ao vivo do PDV antigo (app.py/app.exe), que
+                # grava cada venda nele. Isso deixa o repositorio "sujo" o
+                # dia inteiro em producao -- se o pull fosse cancelado por
+                # causa disso, ele NUNCA rodaria na loja.
+                #
+                # `git pull --ff-only` e seguro sem essa checagem: o proprio
+                # git recusa o merge (e devolve codigo != 0) se o commit
+                # remoto tocar um arquivo com alteracao local, entao dado
+                # nenhum e sobrescrito por acidente. So vira aviso no log.
+                $codigoPull = Invoke-Nativo -Executavel $git `
+                    -Argumentos @('pull', '--ff-only', '--quiet', 'origin', 'main')
+                if ($codigoPull -eq 0) {
+                    Escrever 'codigo atualizado'
+                    $hashDepois = (Get-FileHash $reqPath -Algorithm SHA256).Hash
+                    if ($hashAntes -ne $hashDepois) {
+                        Escrever 'requirements.txt mudou no pull'
+                        $requisitosMudaram = $true
+                    }
                 } else {
-                    $codigoPull = Invoke-Nativo -Executavel $git `
-                        -Argumentos @('pull', '--ff-only', '--quiet', 'origin', 'main')
-                    if ($codigoPull -eq 0) {
-                        Escrever 'codigo atualizado'
-                        $hashDepois = (Get-FileHash $reqPath -Algorithm SHA256).Hash
-                        if ($hashAntes -ne $hashDepois) {
-                            Escrever 'requirements.txt mudou no pull'
-                            $requisitosMudaram = $true
-                        }
-                    } else {
-                        Escrever "git pull falhou (codigo $codigoPull); seguindo com o local" 'AVISO'
+                    Escrever "git pull falhou (codigo $codigoPull); seguindo com o local" 'AVISO'
+                    $sujo = & $git status --porcelain
+                    if ($sujo) {
+                        Escrever 'provavel causa: alteracoes locais que o pull sobrescreveria' 'AVISO'
+                        Escrever ($sujo -join '; ') 'AVISO'
                     }
                 }
             }
@@ -295,9 +302,15 @@ if (Test-Path $Python) {
 
 if ($requisitosMudaram -or $faltaPacote -or ($hashAtual -ne $hashSalvo)) {
     Escrever 'instalando dependencias...'
-    $codigoPip = Invoke-Nativo -Executavel $Pip `
-        -Argumentos @('install', '--quiet', '--disable-pip-version-check', '-r', $reqPath)
-    if ($codigoPip -eq 0) {
+    # `python -m pip` em vez do launcher $Pip (.venv\Scripts\pip.exe): o
+    # launcher e um .exe pequeno com o caminho do interprete gravado dentro
+    # dele, e falha em silencio ("Fatal error in launcher") quando o
+    # antivirus da loja o coloca em quarentena (comum com .exe dentro de
+    # .venv\Scripts) ou quando o caminho do projeto e muito longo. Chamar o
+    # modulo pip pelo proprio python.exe evita as duas causas.
+    $codigoPip = Invoke-Nativo -Executavel $Python `
+        -Argumentos @('-m', 'pip', 'install', '--quiet', '--disable-pip-version-check', '-r', $reqPath)
+    if ($codigoPip -eq 0 -and (Testar-Pacotes)) {
         Set-Content -Path $HashReq -Value $hashAtual -Encoding utf8
         Escrever 'dependencias em dia'
     } else {
@@ -449,8 +462,14 @@ if ($Kiosk) {
 
     if ($navegador) {
         Escrever "abrindo em kiosk: $(Split-Path -Leaf $navegador)"
+        # `--kiosk` NAO aceita valor: e um switch booleano. Passar
+        # "--kiosk=$url" faz o Chromium engolir a URL como se fosse o VALOR
+        # do switch, sobrando nenhuma URL na lista de argumentos posicionais
+        # -- e o navegador abre em tela cheia na pagina inicial (Google), nao
+        # no PDV. A URL tem que ser um argumento SEPARADO.
         Start-Process $navegador -ArgumentList @(
-            "--kiosk=$url",
+            '--kiosk',
+            $url,
             '--no-first-run',
             '--disable-session-crashed-bubble',
             '--disable-infobars',

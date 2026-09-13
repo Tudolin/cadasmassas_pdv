@@ -723,8 +723,14 @@ mais do que estar na última versão.** O git roda com
 `GIT_TERMINAL_PROMPT=0`, para um repositório privado nunca abrir um prompt de
 senha invisível que penduraria a tarefa para sempre.
 
-Se houver alteração local não comitada, o `pull` é cancelado e registrado no
-log, em vez de quebrar a inicialização.
+O script **não** cancela o `pull` só porque há arquivo alterado localmente —
+isso incluiria sempre `pdv_database.db` enquanto o PDV antigo (`app.py`)
+estiver em uso, já que ele grava cada venda nesse arquivo versionado, e o
+`pull` nunca rodaria na loja. Em vez disso ele deixa o próprio `git pull
+--ff-only` decidir: se o commit remoto não mexe no arquivo alterado, o pull
+segue normalmente; se mexe, o `git` recusa o merge (para não sobrescrever o
+dado local) e o script registra o aviso no log, seguindo com o código que já
+está no disco.
 
 ---
 
