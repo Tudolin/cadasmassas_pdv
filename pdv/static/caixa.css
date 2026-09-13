@@ -67,6 +67,22 @@ body {
 .indicador.alerta { color: var(--aviso); border-color: var(--aviso); }
 .indicador.ruim { color: var(--erro); border-color: var(--erro); }
 
+/* Mesmo formato do .indicador, mas clicavel: sincroniza o catalogo na
+   hora sem precisar abrir a secao "Operacao". */
+.indicador-botao {
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--texto-fraco);
+  background: var(--fundo-campo);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.indicador-botao:hover { color: var(--texto); border-color: var(--texto-fraco); }
+.indicador-botao:disabled { opacity: 0.6; cursor: default; }
+
 /* --------------------------------------------------------------- layout */
 
 main {
