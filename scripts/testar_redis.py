@@ -118,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
     except ErroUpstash as erro:
         print(f"{FALHA} {erro}")
         print(_dica_do_erro(str(erro)))
+        if "certificate" in str(erro).lower() or "ssl" in str(erro).lower():
+            _tentar_diagnosticar_certificado(config.upstash_url)
         return 1
 
     if resposta == "PONG":
@@ -325,6 +327,30 @@ def _conferir_produtos(
                 f"    {codigo:<14} {unidade.nome[:30]:<30} "
                 f"R$ {unidade.preco:>8.2f}{marca}"
             )
+
+
+def _tentar_diagnosticar_certificado(url: str) -> None:
+    """
+    Conecta de novo, sem validar nada, so para dizer QUEM emitiu o
+    certificado -- se nao for Amazon/Upstash/Let's Encrypt, o nome que
+    aparece geralmente e o do proprio antivirus/proxy que esta interceptando
+    o HTTPS. Nunca deixa uma falha aqui (rede pior ainda, python antigo sem a
+    API interna) esconder o resultado do PING que já foi reportado acima.
+    """
+    from urllib.parse import urlparse
+
+    host = urlparse(url).hostname if url else None
+    if not host:
+        return
+
+    print("\n         Verificando quem emitiu o certificado...")
+    try:
+        from diagnosticar_certificado import diagnosticar
+
+        for linha in diagnosticar(host).splitlines():
+            print(f"         {linha}" if linha else "")
+    except Exception as erro:  # diagnostico e so um extra, nao pode travar o teste principal
+        print(f"         (nao consegui diagnosticar: {erro})")
 
 
 def _dica_do_erro(erro: str) -> str:
